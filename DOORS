@@ -1,0 +1,146 @@
+-- 主要看这个
+local player = game.Players.LocalPlayer
+local character = player.Character
+local humanoid = character and character:FindFirstChild("Humanoid")
+
+if humanoid then
+    humanoid.Health = 0
+    game:GetService("ReplicatedStorage"):WaitForChild("RemotesFolder"):WaitForChild("Statistics"):FireServer()
+end
+
+
+
+-- 视频展示的
+local player = game.Players.LocalPlayer 
+local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemotesFolder"):WaitForChild("Statistics")
+
+local UserInputService = game:GetService("UserInputService") 
+
+local running = true
+
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.G then
+        running = false
+    end
+end)
+
+while running do  
+    local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+    if humanoid then
+        humanoid.Health = 0
+        remote:FireServer()
+    end
+    task.wait()
+end
+
+
+-- 带UI的脚本
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+if getgenv().UILoaded then
+    if getgenv().Library then
+        getgenv().Library:Notify("禁止拿去缝合圈钱 不然司马", 3)
+    end
+    return
+end
+getgenv().UILoaded = true
+
+local SCRIPT_LIBRARY = "Obsidian"
+
+local repo = SCRIPT_LIBRARY == "Obsidian" and 'https://raw.githubusercontent.com/mstudio45/Obsidian/main/' or 'https://raw.githubusercontent.com/mstudio45/LinoriaLib/main/'
+
+local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
+local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
+local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
+
+local Window = Library:CreateWindow({
+    Title = "doors刷旋钮",
+    Center = true,
+    ToggleKeybind = Enum.KeyCode.RightControl,
+    AutoShow = true,
+    NotifySide = "Right",
+    ShowCustomCursor = true,
+})
+
+local MainTab = Window:AddTab('主要', 'house')
+local MainBox = MainTab:AddLeftGroupbox('有金币才会有旋钮')
+
+local isFarming = false
+local StatisticsRemote = game:GetService("ReplicatedStorage"):WaitForChild("RemotesFolder"):WaitForChild("Statistics")
+
+local function KillPlayer()
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChild("Humanoid")
+    if humanoid then
+        humanoid.Health = 0
+    end
+end
+
+local function FireStatistics()
+    StatisticsRemote:FireServer()
+end
+
+MainBox:AddToggle('FarmKnob', {
+    Text = "刷旋钮",
+    Default = false,
+    Tooltip = "自动杀死玩家并获取旋钮",
+    Callback = function(Value)
+        if Value then
+            isFarming = true
+            while isFarming do
+                KillPlayer()
+                FireStatistics()
+                task.wait()
+            end
+        else
+            isFarming = false
+        end
+    end
+})
+
+local SettingsTab = Window:AddTab('设置', 'settings')
+local SettingsBox = SettingsTab:AddLeftGroupbox('界面设置')
+
+SettingsBox:AddLabel("菜单快捷键"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "菜单快捷键" })
+Library.ToggleKeybind = Library.Options.MenuKeybind
+
+SettingsBox:AddToggle("ShowCustomCursor", {
+    Text = "自定义鼠标",
+    Default = true,
+    Callback = function(Value)
+        Library.ShowCustomCursor = Value
+    end,
+})
+
+SettingsBox:AddDivider()
+
+SettingsBox:AddDropdown("DPIDropdown", {
+    Values = { "50%", "75%", "100%", "125%", "150%", "175%", "200%" },
+    Default = "100%",
+    Text = "界面缩放",
+    Callback = function(Value)
+        Value = Value:gsub("%%", "")
+        local DPI = tonumber(Value)
+        Library:SetDPIScale(DPI)
+    end,
+})
+
+SettingsBox:AddButton({
+    Text = "卸载脚本",
+    Func = function()
+        isFarming = false
+        LocalPlayer:SetAttribute("UILoaded", nil)
+        Library:Unload()
+    end
+})
+
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({'MenuKeybind'})
+ThemeManager:SetFolder("MyScriptHub")
+SaveManager:SetFolder("MyScriptHub")
+SaveManager:BuildConfigSection(SettingsTab)
+ThemeManager:ApplyToTab(SettingsTab)
